@@ -1,0 +1,43 @@
+Data processing steps outline
+
+0. [zen macro] generate split scene and acquisition_data.csv
+input: barcode
+output: img file or acquisition_data.csv in plate folder
+
+1. get_10x_imgs
+input: cell line, dataset id
+output: '_10x.csv'
+
+1.1 augment 10x data paths
+input: problematic cell line data
+output: '_10x.csv'
+
+2. get_100x_img_positions
+input: cell line, dataset id
+output: '_100x_position.csv'
+
+3. [zen macro] get 10x stitched images
+input: '_10x.csv'
+output: '_10x_meta.csv'
+
+4. colony_seg_10x
+input: '_10x_meta.csv'
+output: colony segmentation, 'output_per_colony_[cell_line].csv', 'output_per_well_[cell_line].csv'
+
+5. calculate_position_10x_100x
+input: cell line, colony segmentation images, '_10x_meta.csv', '_100x_position.csv'
+output: '_position_info_100x.csv'
+
+6. merge_10x_100x_features
+input: cell line, '_10x_meta.csv', 'output_per_colony_[cell_line].csv', 'output_per_well_[cell_line].csv' and '_position_info_100x.csv'
+output: '[cell_line]_position_in_colony.csv'
+
+7. merge_info_cell_lines
+input: cell_line, '[cell_line]_position_in_colony.csv'
+output: 'all_position_in_colony.csv'
+
+8. add flags
+input: 'all_position_in_colony.csv'
+output: 'all_position_in_colony_flag.csv'
+
+9.(merge with per cell meta csv)

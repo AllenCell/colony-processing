@@ -1,0 +1,105 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Script Version="1.0">
+  <Language>Python</Language>
+  <Text>Zen.Application.Documents.RemoveAll()
+
+from System.IO import File, Directory, FileInfo, Path
+
+variance_project = r'\\allen\aics\microscopy\Data\fov_in_colony'
+output_folder = r'\\allen\aics\microscopy\Data\fov_in_colony\stitched_img'
+
+cell_lines = ['AICS-61', 'AICS-69', 'AICS-33', 'AICS-40', 'AICS-24']
+
+dataset_dict = {
+    'AICS-12': [4, 86],
+    'AICS-16': [6],
+    'AICS-24': [43, 89],
+    'AICS-7': [5],
+    'AICS-46': [],
+    'AICS-54': [25],
+    'AICS-13': [12],
+    'AICS-14': [11],
+    'AICS-57': [44],
+    'AICS-61': [83],
+    'AICS-69': [84],
+    'AICS-11': [3, 87],
+    'AICS-10': [14, 88],
+    'AICS-25': [15],
+    'AICS-22': [2, 90],
+    'AICS-33': [40],
+    'AICS-40': [41],
+    'AICS-32': [8],
+    'AICS-17': [10],
+    'AICS-23': [16],
+    'AICS-53': [9],
+    'AICS-5': [35],
+    'AICS-58': [7]
+}
+
+stitch_setting = Zen.Processing.Transformation.Settings.StitchingSetting()
+stitch_setting.Inplace = False
+stitch_setting.FuseTiles = True
+stitch_setting.CorrectShading = False
+stitch_setting.Parameters.EdgeDetector = True
+stitch_setting.Parameters.MinimalOverlap = 5
+stitch_setting.Parameters.MaxShift = 10
+stitch_setting.Parameters.Comparer = ZenStitchingComparer.Best
+stitch_setting.Parameters.GlobalOptimizer = ZenStitchingGlobalOptimizerMode.Best
+
+for cell_line, datasets in dataset_dict.items():
+    for dataset_id in datasets:
+        table = Zen.Application.LoadTable(Path.Combine(variance_project, cell_line + '_' + str(dataset_id) + '_10x.csv'))
+
+        table.Columns.Add("stitched_path", str)
+        table.Columns.Add("acquisition_date", str)
+        table.Columns.Add("acquisition_year", str)
+        table.Columns.Add("acquisition_time", str)
+        table.Columns.Add("stage_x", float)
+        table.Columns.Add("stage_y", float)
+        table.Columns.Add("focus_position", float)
+
+        # Zen.Application.Documents.Add(table)
+
+        for index in range(1, table.RowCount):
+            filepath_10x = '\\' + table.GetValue(index, 4).replace('/', '\\')
+
+            if File.Exists(filepath_10x):
+
+                image = Zen.Application.LoadImage(filepath_10x, False)
+                file_info = FileInfo(filepath_10x)
+                print(filepath_10x)
+                if int(image.Metadata.TilesCount) &gt; 1:
+                    stitched_image = Zen.Processing.Transformation.Geometric.Stitching(image, None, stitch_setting)
+                    stitched_image.Save(Path.Combine(output_folder, file_info.Name))
+                    stitched_path = Path.Combine(output_folder, file_info.Name)
+                else:
+                    stitched_path = filepath_10x
+
+                date = image.Metadata.AcquisitionTime.Split(',')[1]
+                year = image.Metadata.AcquisitionTime.Split(',')[2][1:5]
+                time = image.Metadata.AcquisitionTime.Split(',')[2][5:]
+                position = image.Metadata.StagePositionMicron
+                stage_x = position.X
+                stage_y = position.Y
+                focus_position = image.Metadata.FocusPositionMicron
+
+                table.SetValue(index, 5, stitched_path)
+                table.SetValue(index, 6, date)
+                table.SetValue(index, 7, year)
+                table.SetValue(index, 8, time)
+                table.SetValue(index, 9, stage_x)
+                table.SetValue(index, 10, stage_y)
+                table.SetValue(index, 11, focus_position)
+
+                image.Close()
+
+        table.Save(Path.Combine(variance_project, cell_line + '_' + str(dataset_id) + '_10x_meta.csv'))
+
+</Text>
+  <Author></Author>
+  <Description></Description>
+  <ApplicationName></ApplicationName>
+  <Keywords></Keywords>
+  <Row>7</Row>
+  <Column>1</Column>
+</Script>
